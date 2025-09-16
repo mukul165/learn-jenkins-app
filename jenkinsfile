@@ -2,35 +2,45 @@ pipeline {
     agent any
 
     stages {
-      stage('build') {
-        parallel{
-            agent{
-                docker{
-                    image 'node:18-alpine'
-                    reuseNode true
+        stage('Build and Test in Parallel') {
+            parallel {
+                stage('Build') {
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                            ls -la
+                            node --version
+                            npm --version
+                            npm ci
+                            npm run build
+                            ls -la
+                            cd build
+                            ls -a | grep index.html
+                        '''
+                    }
+                }
+
+                stage('Test') {
+                    agent {
+                        docker {
+                            image 'node:18-alpine'
+                            reuseNode true
+                        }
+                    }
+                    steps {
+                        sh '''
+                            echo Test stage
+                            npm ci
+                            npm test
+                        '''
+                    }
                 }
             }
-            steps {
-                sh '''
-                    ls -la
-                    node --version
-                    npm --version
-                    npm ci
-                    npm run build
-                    ls -la
-                    cd build 
-                    ls -a | grep index.html
-                '''
-            }
-        }
-    stage('Test') {
-        steps{
-            sh '''
-                echo Test stage
-                npm test
-            '''
         }
     }
-  }
-}
 }
